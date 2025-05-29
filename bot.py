@@ -36,11 +36,11 @@ class MyBot(commands.Bot):
         super().__init__(command_prefix="!", intents=discord.Intents.all())
 
     async def on_ready(self):
-        guild = bot.get_guild(1171884455623925913)  # Заміна SERVER_ID на реальний ID вашого сервера
-        bot_member = guild.get_member(bot.user.id)  # Отримуємо бота на сервері
-        permissions = bot_member.guild_permissions  # Отримуємо всі дозволи для бота
+        guild = bot.get_guild(**********)  
+        bot_member = guild.get_member(bot.user.id)  
+        permissions = bot_member.guild_permissions  
         print(permissions)
-        await self.tree.sync()  # Синхронізуємо команди
+        await self.tree.sync()  
         print(f"Бот {self.user} підключився!")
 
 bot = MyBot()
@@ -67,11 +67,11 @@ async def choose(interaction: discord.Interaction, category: str, points: int):
 
     if category in questions and points in questions[category]:
         q_type, q_data, question_text, answer = questions[category][points]
-        used_questions.add((category, points))  # Позначаємо питання як використане
+        used_questions.add((category, points))  
 
         embed = discord.Embed(title=f"{category} - {points} балів", description=question_text, color=0x00ff00)
 
-        if q_type == "image":  # 📷 Фото + Питання
+        if q_type == "image":  
             if not os.path.exists(q_data):
                 await interaction.response.send_message("❌ Файл зображення не знайдено!")
                 return
@@ -79,14 +79,14 @@ async def choose(interaction: discord.Interaction, category: str, points: int):
             embed.set_image(url="attachment://question.jpg")
             await interaction.response.send_message(file=file, embed=embed)
 
-        elif q_type == "audio":  # 🔊 Звук + Питання
+        elif q_type == "audio":  
             if not os.path.exists(q_data):
                 await interaction.response.send_message("❌ Файл аудіо не знайдено!")
                 return
             file = discord.File(q_data, filename="question.mp3")
             await interaction.response.send_message(embed=embed, file=file)
 
-        elif q_type == "text":  # 📝 Опис + Питання
+        elif q_type == "text": 
             embed.add_field(name="Додаткова інформація", value=q_data, inline=False)
             await interaction.response.send_message(embed=embed)
 
@@ -96,21 +96,21 @@ async def choose(interaction: discord.Interaction, category: str, points: int):
 
         time_left = 60
 
-        # Виводимо початкове повідомлення з таймером
+       
         timer_message = await interaction.followup.send(f"⏳ Таймер: {time_left} секунд")
 
         async def update_timer():
             nonlocal time_left
             while time_left > 0:
-                await asyncio.sleep(1)  # Затримка в 1 секунду
-                time_left -= 1  # Зменшуємо таймер
-                # Оновлюємо повідомлення з новим значенням таймера
+                await asyncio.sleep(1)  
+                time_left -= 1  
+            
                 await timer_message.edit(content=f"⏳ Таймер: {time_left} секунд")
 
-        # Запускаємо таймер в окремому асинхронному процесі
+        
         timer_task = asyncio.create_task(update_timer())
 
-        # Очікуємо відповідь
+        
         def check(m):
             print(player_scores)
             return m.channel ==  interaction.channel and m.author != bot.user
@@ -118,7 +118,7 @@ async def choose(interaction: discord.Interaction, category: str, points: int):
         try:
             response = await bot.wait_for("message", check=check, timeout=time_left)
             if timer_task:
-                timer_task.cancel()  # Скасовуємо задачу таймера
+                timer_task.cancel()  
                 await timer_message.delete() 
         except asyncio.TimeoutError:
             await interaction.followup.send("⏳ Час вичерпано! Ви не встигли дати відповідь.")
@@ -147,7 +147,7 @@ async def show_scores(interaction: discord.Interaction):
 @bot.tree.command(name="reset_scores", description="Скидає бали всіх учасників")
 async def reset_scores(interaction: discord.Interaction):
     global player_scores
-    player_scores = {}  # Очищуємо список балів
+    player_scores = {}  
     await interaction.response.send_message("🔄 Всі бали було скинуто!")
             
 # @bot.tree.command(name="check_all_questions", description="Виводить повну інформацію про всі питання для перевірки")
@@ -182,15 +182,15 @@ async def reset_scores(interaction: discord.Interaction):
 
 
 
-# Таймери, щоб не запускати декілька разів
+
 channel_timers = {}
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    # Перевіряємо, чи користувач зайшов у канал
+    
     if before.channel is None and after.channel is not None:
         channel = after.channel
-        members = [m for m in channel.members if not m.bot]  # Тільки не-боти
+        members = [m for m in channel.members if not m.bot]  
 
         if len(members) >= 2 and channel.id not in channel_timers:
             print(f"✅ У каналі {channel.name} тепер {len(members)} учасників. Запуск таймера на 10 хв...")
@@ -198,32 +198,32 @@ async def on_voice_state_update(member, before, after):
             await asyncio.create_task(play_after_delay(channel))
 
 async def play_after_delay(channel):
-    await asyncio.sleep(10 * 60)  # Затримка 5 хвилин
+    await asyncio.sleep(10 * 60)  
 
-    # Перевірка: чи досі є 2+ людей в голосовому каналі
+    
     if channel and len([m for m in channel.members if not m.bot]) >= 2:
         print(f"🎵 Відтворення в {channel.name} після 10 хвилин.")
         await join_and_play_sound(channel)
     else:
         print(f"❌ Менше ніж 2 учасники в {channel.name} після 10 хв. Пропускаємо звук.")
 
-    # Очищаємо таймер
+    
     channel_timers.pop(channel.id, None)
 
 
 async def join_and_play_sound(channel):
-    # Приєднуємо бота до голосового каналу
+    
     voice_channel = channel
     voice_client = await voice_channel.connect()
 
-    # Вказуємо шлях до FFmpeg, якщо він не в PATH
+   
     ffmpeg_path = r"C:\Users\alexa\Desktop\BotDiscordGame\ffmpeg-7.1.1-essentials_build\ffmpeg-7.1.1-essentials_build\bin\ffmpeg.exe"  # Замініть на реальний шлях до вашого FFmpeg
 
-    # Програємо звук
+   
     audio_source = FFmpegPCMAudio("sounds/V1.mpeg", executable=ffmpeg_path)
     voice_client.play(audio_source)
 
-    # Зачекаємо, поки звук програється, і потім від'єднаємо бота від каналу
+   
     while voice_client.is_playing():
         await asyncio.sleep(1)
 
